@@ -2,7 +2,13 @@
   "name": "robinson-collector",
   "version": "0.1.0",
   "description": "A data collector for Robinson",
-  "main": "index.js",
+  "main": "src/web.js",
+  "dependencies": {
+      "express": "3.1.0",
+      "body-parser": "1.10.0",
+      "logfmt": "1.2.0",
+      "mongodb": "1.2.13"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
