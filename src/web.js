@@ -5,7 +5,7 @@ var mongo = require('mongodb');
 
 var app = express();
 app.use(logfmt.requestLogger());
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '5mb'}));
 
 var mongoUri = process.env.MONGO_URI || 'mongodb://localhost/robinson-collector';
 mongo.connect(mongoUri, {}, function(error, db) {
