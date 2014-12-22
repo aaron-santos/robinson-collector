@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var logfmt = require('logfmt');
 var mongo = require('mongodb');
+var _ = require('underscore');
 
 var app = express();
 app.use(logfmt.requestLogger());
@@ -17,6 +18,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
   app.post("/saves/:userid", function(req, res) {
     var userid = req.params.userid;
     req.body['user-id'] = userid;
+    req.body['date'] = new Date();
     console.log("Saving data from user " + userid);
     console.log("data:" + JSON.stringify(req.body));
     db.collection('saves').insert(req.body, function(err, records){
@@ -27,6 +29,26 @@ mongo.connect(mongoUri, {}, function(error, db) {
       }
     });
     res.send(201, null);
+  });
+  // Query for timelines
+  app.get("/saves/timelines", function (req, res) {
+    db.collection('saves').find({}, {"player.stats": true, "user-id": true, "date": true}, function(err, saves) {
+      if (err) {
+        console.log("Error retrieving /saves/timelines " + err);
+      }
+      saves.toArray(function(err, savesArray) {
+        if (err) {
+          console.log("Error creating /saves/timelines array" + err);
+        }
+        res.send(200, _.map(savesArray, function(save) {
+          var timeline = {};
+          timeline.events = save.player.stats.timeline;
+          timeline.userid = save.userid;
+          timeline.date = save.date;
+          return timeline;
+        }));
+      });
+    });
   });
 });
 
