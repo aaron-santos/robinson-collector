@@ -17,7 +17,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
   // Accept new saves
   app.post("/saves/:userid", function(req, res) {
     var userid = req.params.userid;
-    req.body['user-id'] = userid;
+    req.body['userid'] = userid;
     req.body['date'] = new Date();
     console.log("Saving data from user " + userid);
     console.log("data:" + JSON.stringify(req.body));
@@ -32,7 +32,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
   });
   // Query for timelines
   app.get("/saves/timelines", function (req, res) {
-    db.collection('saves').find({}, {"player.stats": true, "user-id": true, "date": true}, function(err, saves) {
+    db.collection('saves').find({}, {"player.stats": true, "userid": true, "date": true}, function(err, saves) {
       if (err) {
         console.log("Error retrieving /saves/timelines " + err);
       }
@@ -41,10 +41,11 @@ mongo.connect(mongoUri, {}, function(error, db) {
           console.log("Error creating /saves/timelines array" + err);
         }
         res.send(200, _.map(savesArray, function(save) {
-          var timeline = {};
-          timeline.events = save.player.stats.timeline;
-          timeline.userid = save.userid;
-          timeline.date = save.date;
+          var timeline = {id:     save._id,
+                          events: save.player.stats.timeline,
+                          userid: save.userid,
+                          date:   save.date}
+          console.log("Returning timeline for user: " + timeline.userid);
           return timeline;
         }));
       });
