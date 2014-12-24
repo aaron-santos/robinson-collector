@@ -2,7 +2,7 @@ $(document).ready(function() {
   var timelinesUrl = "https://aaron-santos.com/saves/timelines";
   $.getJSON(timelinesUrl)
     .done(function(timelines) {
-      console.log(timelines);
+      console.log(JSON.stringify(timelines));
       var data = _.chain(timelines)
                   .map(function(d) {
                     return _.map(d.events, function(e) {
@@ -36,9 +36,13 @@ $(document).ready(function() {
       var timeDimension = ndx.dimension(function(e) {
         return [e.saveid, e.time]
       });
-      var timeGroup = timeDimension.group().reduceSum(function(d) {
-        return typeToIdx(d.type);
-      });
+      var timeGroup = timeDimension.group().reduce(function(p, v) {
+        if (v.total == -1)
+          return typeToIdx(p);
+        return -1;
+      }, function(p, v) {
+          return -1;
+      }, function() {return -1;});
       var symbolScale = d3.scale.ordinal().range(d3.svg.symbolTypes);
       var symbolAccessor = function(d) {return symbolScale(saveIdToIdx(d.key[0]));};
       var subChart = function(c) {
@@ -68,7 +72,7 @@ $(document).ready(function() {
              return d.key[1];
            })
            .valueAccessor(function(d) {
-             return d.value;
+             return types.length - d.value - 1;
            })
            .legend(dc.legend().x(350).y(50).itemHeight(13).gap(5).horizontal(1).legendWidth(240).itemWidth(210));
       chart.yAxis().tickFormat(function(d) {
