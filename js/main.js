@@ -1,57 +1,64 @@
 $(document).ready(function() {
-  var timelinesUrl = "https://aaron-santos.com/saves/timelines";
+  var timelinesUrl = "/saves/timelines";
   $.getJSON(timelinesUrl)
     .done(function(timelines) {
       console.log(JSON.stringify(timelines));
       var data = _.chain(timelines)
                   .map(function(d) {
-                    return _.map(d.events, function(e) {
-                      return {saveid: d.id,
-                              time:   e.time,
-                              type:   e.type};
-                           });
+                    return _.chain(d.events)
+                            .unique(false, function(e) {
+                              return e.time.toString() + e.type;
+                            })
+                            .map(function(e) {
+                              var type;
+                              if (e.type === "item-harvested") {
+                                type = "item-harvested-" + e.food.name;
+                              } else if (e.type === "npc-killed") {
+                                type = "npc-killed-" + e.npc.name;
+                              } else if (e.type === "food-eaten") {
+                                type = "food-eaten-" + e.food.name;
+                              }
+                              return {saveid: d.id,
+                                      time:   e.time,
+                                      type:   type};
+                            })
+                            .value();
                   })
                   .flatten(true)
                   .value();
       var types = _.chain(data)
                    .map(function(d) {return d.type})
-                   .unique()
+                   .unique(false)
                    .value();
       function typeToIdx(t) {
         return _.indexOf(types, t);
       };
-      console.log("Types:");
-      for(var i in types) {
-        console.log(i + ":" + types[i]);
-      }
-      var saveids = _.chain(data)
+      console.dir(types);
+      var saveIds = _.chain(data)
                      .map(function(d) {return d.saveid})
-                     .unique()
+                     .unique(false)
                      .value();
       function saveIdToIdx(s) {
-        return _.indexOf(saveids, s);
+        return _.indexOf(saveIds, s);
       }
-      console.log(JSON.stringify(data));
+      console.dir(data);
       var ndx = crossfilter(data);
-      var timeDimension = ndx.dimension(function(e) {
-        return [e.saveid, e.time]
+      var timeDimension = ndx.dimension(function(d) {
+        return [saveIdToIdx(d.saveid), +d.time]
       });
-      var timeGroup = timeDimension.group().reduce(function(p, v) {
-        if (v.total == -1)
-          return typeToIdx(p);
-        return -1;
-      }, function(p, v) {
-          return -1;
-      }, function() {return -1;});
+      var timeGroup = timeDimension.group().reduceSum(function(d) {
+          return 1 + typeToIdx(d.type);
+      });
       var symbolScale = d3.scale.ordinal().range(d3.svg.symbolTypes);
-      var symbolAccessor = function(d) {return symbolScale(saveIdToIdx(d.key[0]));};
+      var symbolAccessor = function(d) {return symbolScale(d.key[0]);};
       var subChart = function(c) {
         return dc.scatterPlot(c)
                  .symbol(symbolAccessor)
                  .symbolSize(8)
                  .highlightedSize(10);
       };
-      var maxTime = timeDimension.top(1)[0].time;
+      var maxTime = _.max(data, function(d) {return d.time;}).time;
+      console.log("MaxTime:" + maxTime);
       var chart = dc.seriesChart('#timeline-chart');
       chart.width(800)
            .height(400)
@@ -61,24 +68,28 @@ $(document).ready(function() {
            .yAxisLabel("Type")
            .xAxisLabel("Turn")
            .clipPadding(10)
-           .elasticY(true)
+           .elasticY(false)
            .dimension(timeDimension)
            .group(timeGroup)
            .mouseZoomable(true)
            .seriesAccessor(function(d) {
-             return "Save: " +d.key[0];
+             return "Save: " + saveIds[d.key[0]];
            })
            .keyAccessor(function(d) {
-             return d.key[1];
+             //console.dir(d);
+             return +d.key[1];
            })
            .valueAccessor(function(d) {
-             return types.length - d.value - 1;
+             return +d.value;
            })
            .legend(dc.legend().x(350).y(50).itemHeight(13).gap(5).horizontal(1).legendWidth(240).itemWidth(210));
       chart.yAxis().tickFormat(function(d) {
-        return types[d];
+        if ((d > types.length) || (d < 1)) {
+          return "OutOfBounds";
+        }
+        return types[d - 1];
       });
-      chart.margins().left += 60;
+      chart.margins().left += 160;
       dc.renderAll();
    
     });
