@@ -5,12 +5,14 @@ $(document).ready(function() {
       console.log(JSON.stringify(timelines));
       var data = _.chain(timelines)
                   .map(function(d) {
+                    var prevTimes = {};
                     return _.chain(d.events)
                             .unique(false, function(e) {
                               return e.time.toString() + e.type;
                             })
+                            .sortBy(function(d) {return d.time;})
                             .map(function(e) {
-                              var type;
+                              var type = e.type;
                               if (e.type === "item-harvested") {
                                 type = "item-harvested-" + e.food.name;
                               } else if (e.type === "npc-killed") {
@@ -18,9 +20,14 @@ $(document).ready(function() {
                               } else if (e.type === "food-eaten") {
                                 type = "food-eaten-" + e.food.name;
                               }
-                              return {saveid: d.id,
-                                      time:   e.time,
-                                      type:   type};
+                              var prevTime = prevTimes[e.type] || 0;
+                              prevTimes[e.type] = e.time;
+                              return {saveid:   d.id,
+                                      category: e.type,
+                                      time:     e.time,
+                                      type:     type,
+                                      prevTime: prevTime,
+                                      diffTime: e.time - prevTime};
                             })
                             .value();
                   })
@@ -47,21 +54,33 @@ $(document).ready(function() {
         return [saveIdToIdx(d.saveid), +d.time]
       });
       var timeGroup = timeDimension.group().reduceSum(function(d) {
-          return 1 + typeToIdx(d.type);
+        return 1 + typeToIdx(d.type);
       });
+      var timeDiffDimension = ndx.dimension(function(d) {
+        return [typeToIdx(d.type), +d.diffTime];
+      });
+      var timeDiffGroup = timeDiffDimension.group().reduceCount()
       var symbolScale = d3.scale.ordinal().range(d3.svg.symbolTypes);
       var symbolAccessor = function(d) {return symbolScale(d.key[0]);};
       var subChart = function(c) {
         return dc.scatterPlot(c)
                  .symbol(symbolAccessor)
                  .symbolSize(8)
-                 .highlightedSize(10);
+                 .highlightedSize(10)
+                 .renderTitle(true)
+                 .title(function (d) {
+                    return d.key[1] + '\n' + d.value;
+                 });
       };
       var maxTime = _.max(data, function(d) {return d.time;}).time;
+      var maxDiffTime = _.max(data, function(d) {return d.diffTime;}).diffTime;
       console.log("MaxTime:" + maxTime);
-      var chart = dc.seriesChart('#timeline-chart');
-      chart.width(800)
-           .height(400)
+      var timelineHeight = 700,
+          timelineLegendHeight = 300,
+          timelineLegendY = timelineHeight - timelineLegendHeight;
+      var timelineChart = dc.seriesChart('#timeline-chart');
+      timelineChart.width(800)
+           .height(timelineHeight)
            .chart(subChart)
            .x(d3.scale.linear().domain([0, maxTime]))
            .brushOn(false)
@@ -69,6 +88,7 @@ $(document).ready(function() {
            .xAxisLabel("Turn")
            .clipPadding(10)
            .elasticY(false)
+           .renderHorizontalGridLines(true)
            .dimension(timeDimension)
            .group(timeGroup)
            .mouseZoomable(true)
@@ -82,14 +102,63 @@ $(document).ready(function() {
            .valueAccessor(function(d) {
              return +d.value;
            })
-           .legend(dc.legend().x(350).y(50).itemHeight(13).gap(5).horizontal(1).legendWidth(240).itemWidth(210));
-      chart.yAxis().tickFormat(function(d) {
+           .legend(dc.legend()
+                     .x(350)
+                     .y(timelineLegendY)
+                     .itemHeight(13)
+                     .gap(5)
+                     .horizontal(1)
+                     .legendWidth(240)
+                     .itemWidth(210));
+      timelineChart.yAxis().tickFormat(function(d) {
         if ((d > types.length) || (d < 1)) {
           return "OutOfBounds";
         }
         return types[d - 1];
       });
-      chart.margins().left += 160;
+      timelineChart.margins().left += 160;
+      timelineChart.margins().bottom = timelineLegendY + 10;
+
+
+      var subChart = function(c) {
+        return dc.barChart(c);
+      };
+      var diffTimelineHeight = 400,
+          diffTimelineLegendHeight = 150,
+          diffTimelineLegendY = diffTimelineHeight - diffTimelineLegendHeight;
+      var diffTimelineChart = dc.seriesChart('#difference-chart');
+      diffTimelineChart.width(800)
+        .chart(subChart)
+        .height(diffTimelineHeight)
+        .x(d3.scale.linear().domain([0, maxDiffTime]))
+        .brushOn(false)
+        .yAxisLabel("Count")
+        .xAxisLabel("Time Interval")
+        .clipPadding(10)
+        .dimension(timeDiffDimension)
+        .group(timeDiffGroup)
+        .seriesAccessor(function(d) {
+          return "Type: " + types[d.key[0]];
+        })
+        .keyAccessor(function(d) {
+          //console.dir(d);
+          return +d.key[1];
+        })
+        .valueAccessor(function(d) {
+          return +d.value;
+        });
+      diffTimelineChart.margins().left += 160;
+      diffTimelineChart.margins().bottom = diffTimelineLegendY + 10;
+      diffTimelineChart
+        .legend(dc.legend()
+                  .x(350)
+                  .y(diffTimelineLegendY)
+                  .itemHeight(13)
+                  .gap(5)
+                  .horizontal(1)
+                  .legendWidth(240)
+                  .itemWidth(210));
+
       dc.renderAll();
    
     });
