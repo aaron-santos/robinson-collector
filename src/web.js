@@ -3,6 +3,7 @@ var bodyParser = require('body-parser');
 var logfmt = require('logfmt');
 var mongo = require('mongodb');
 var _ = require('underscore');
+require("console-stamp")(console, "yyyy-mm-dd HH:MM:ss.l");
 
 var app = express();
 app.use(logfmt.requestLogger());
@@ -32,22 +33,25 @@ mongo.connect(mongoUri, {}, function(error, db) {
   });
   // Query for timelines
   app.get("/saves/timelines", function (req, res) {
+    console.log("Retrieving player stats");
     db.collection('saves').find({}, {"player.stats": true, "userid": true, "date": true}, function(err, saves) {
       if (err) {
         console.log("Error retrieving /saves/timelines " + err);
       }
+      console.log("Got stats, Serializing to array");
       saves.toArray(function(err, savesArray) {
         if (err) {
           console.log("Error creating /saves/timelines array" + err);
         }
+        console.log("Got stats array, returning HTTP response");
         res.send(200, _.map(savesArray, function(save) {
           var timeline = {id:     save._id,
                           events: save.player.stats.timeline,
                           userid: save.userid,
                           date:   save.date}
-          console.log("Returning timeline for user: " + timeline.userid);
           return timeline;
         }));
+        console.log("Done sending HTTP response");
       });
     });
   });

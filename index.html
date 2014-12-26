@@ -14,12 +14,52 @@
 
         <!--<link rel="stylesheet" href="css/normalize.css">-->
         <!--<link rel="stylesheet" href="css/main.css">-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.3/dc.min.css">
         <!--<script src="js/vendor/modernizr-2.6.2.min.js"></script>-->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.11/crossfilter.min.js"></script>
-        <script src="https://raw.githubusercontent.com/dc-js/dc.js/2.0.0-alpha.5/dc.min.js"></script>
+        <script src="lib/dc.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+        <style>
+        @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz:400,700);
+
+        body {
+          font-family: "Helvetica Neue";
+          margin: 40px auto;
+          width: 960px;
+          min-height: 2000px;
+        }
+        
+        #body {
+          position: relative;
+        }
+
+        h1 {
+          font-size: 62px;
+          margin-top: .3em;
+          margin-bottom: 0;
+        }
+        
+        h1 + h2 {
+          margin-top: 0;
+        }
+        
+        h2 {
+          font-weight: 400;
+          font-size: 28px;
+        }
+        h1, h2 {
+          font-family: "Yanone Kaffeesatz";
+          text-rendering: optimizeLegibility;
+        }
+        .container > p, pre {
+          line-height: 1.5em;
+          width: 700px;
+          text-rendering: optimizeLegibility;
+        }
+
+        </style>
     </head>
     <body>
         <!--[if lt IE 7]>
@@ -27,9 +67,61 @@
         <![endif]-->
 
         <!-- Add your site or application content here -->
-        <p>A visualization tool for Robinson</p>
-        <div id="timeline-chart"></div>
-        <div id="difference-chart"></div>
+        <div class="container">
+            <h1>A Visualization Tool For Robinson</h1>
+            <p><a href="https://github.com/aaron-santos/robinson">Robinson</a> is a survival-oriented roguelike, and 
+            <a href="https://github.com/aaron-santos/robinson-collector">Robinson-collector</a> is a visualization tool for data generated during Robinson gameplay.</p>
+            <strong>Why?</strong>
+            <p>There are many ways to balance a game including playing it (a lot), creating spreadsheet and charts, simulating play, collecting data and analyzing it.
+            Robinson-collector is designed to last. The idea isn't to solely rely on collection and analysis, but to fill the gap that isn't covered by the other methods.
+            Collecting data from real gameplay is important - other players will play a game differently than you, they may exploit the mechanics in ways you didn't intend.
+            Your play-style won't be the same as another player's and a game should accommodate multiple play styles. At a broad level collecting real world data provides
+            insights into gameplay in ways that you never imagined. It's a good way to find out where a complex system needs to be balanced.</p>
+            <strong>How it works</strong>
+            <p>While playing Robinson, interesting events are stored in a timeline. For example, when the player eats a white fruit, an event like this is appended to the player's
+            timeline.</p>
+            <pre>
+{
+  "time" : 29,
+  "type" : "food-eaten",
+  "food" : {
+          "hotkey" : "A",
+          "rot-time" : 31,
+          "name" : "white fruit",
+          "name-plural" : "white fruits",
+          "id" : "white-fruit",
+          "hunger" : 30
+  }
+}
+            </pre>
+            <p>The event encodes the time at which the event occurred, the type of the event and the target of the event. In this case, the target is "food" and it details which food
+            item was eaten.</p>
+
+            <p>When the player wins or loses and the game is over, Robinson uploads the game state to a server. The game state includes a record of all the events that occurred in the
+            player's timeline over the course of the game. The data is stored in MongoDb.</p>
+
+
+            <p>Robinson-collector fetches that data and uses <a href="http://square.github.io/crossfilter/">Crossfilter</a> and <a href="http://dc-js.github.io/dc.js/">dc.js</a> to
+            display charts you see below.</p>
+
+            <p>
+            <h2>The Charts</h2>
+            <div id="timeline-chart-section">
+                <strong>Timeline of events in all games</strong>
+                <p>This chart shows all of the events that were recorded for the games stored on the server.</p>
+                <div id="timeline-chart"></div>
+                <div class="clearfix"></div>
+            </div>
+            <div id="timeline-chart-section">
+                <strong>Interval between events of the same type</strong>
+                <p>This chart shows the time between events of the same type.</p>
+                <div id="difference-chart"></div>
+                <div class="clearfix"></div>
+            </div>
+            </p>
+            <strong>What's next?</strong>
+            <p>Over time there will be a lot of data to analyze, but for now the next steps will be to add charts for win/loss ratio, and broader inter-event analysis.</p>
+        </div>
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>

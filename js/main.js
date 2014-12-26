@@ -75,11 +75,11 @@ $(document).ready(function() {
       var maxTime = _.max(data, function(d) {return d.time;}).time;
       var maxDiffTime = _.max(data, function(d) {return d.diffTime;}).diffTime;
       console.log("MaxTime:" + maxTime);
-      var timelineHeight = 700,
-          timelineLegendHeight = 300,
+      var timelineHeight = 500,
+          timelineLegendHeight = 230,
           timelineLegendY = timelineHeight - timelineLegendHeight;
       var timelineChart = dc.seriesChart('#timeline-chart');
-      timelineChart.width(800)
+      timelineChart.width(700)
            .height(timelineHeight)
            .chart(subChart)
            .x(d3.scale.linear().domain([0, maxTime]))
@@ -91,7 +91,7 @@ $(document).ready(function() {
            .renderHorizontalGridLines(true)
            .dimension(timeDimension)
            .group(timeGroup)
-           .mouseZoomable(true)
+           .mouseZoomable(false)
            .seriesAccessor(function(d) {
              return "Save: " + saveIds[d.key[0]];
            })
@@ -103,7 +103,7 @@ $(document).ready(function() {
              return +d.value;
            })
            .legend(dc.legend()
-                     .x(350)
+                     .x(220)
                      .y(timelineLegendY)
                      .itemHeight(13)
                      .gap(5)
@@ -123,11 +123,11 @@ $(document).ready(function() {
       var subChart = function(c) {
         return dc.barChart(c);
       };
-      var diffTimelineHeight = 400,
-          diffTimelineLegendHeight = 150,
+      var diffTimelineHeight = 500,
+          diffTimelineLegendHeight = 240,
           diffTimelineLegendY = diffTimelineHeight - diffTimelineLegendHeight;
       var diffTimelineChart = dc.seriesChart('#difference-chart');
-      diffTimelineChart.width(800)
+      diffTimelineChart.width(700)
         .chart(subChart)
         .height(diffTimelineHeight)
         .x(d3.scale.linear().domain([0, maxDiffTime]))
@@ -151,7 +151,7 @@ $(document).ready(function() {
       diffTimelineChart.margins().bottom = diffTimelineLegendY + 10;
       diffTimelineChart
         .legend(dc.legend()
-                  .x(350)
+                  .x(250)
                   .y(diffTimelineLegendY)
                   .itemHeight(13)
                   .gap(5)
