@@ -3,6 +3,7 @@ var bodyParser = require('body-parser');
 var RateLimit = require('express-rate-limit');
 var nodemailer = require('nodemailer');
 var logfmt = require('logfmt');
+var sanitizeHtml = require('sanitize-html');
 var mongo = require('mongodb');
 var _ = require('underscore');
 require("console-stamp")(console, "yyyy-mm-dd HH:MM:ss.l");
@@ -72,6 +73,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
     var date = req.body['date'];
     var version = req.body['version'];
     var userid = req.body['user-id'];
+    var description = req.body['description'];
     console.log("Received report from user-id " + userid + " on " + date + " using version " + version);
     db.collection('reports').insert(req.body, function(err, records){
       if (err) {
@@ -83,6 +85,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
                                                          + "User-id:" + userid + "<br />"
                                                          + "Version:" + version + "<br />"
                                                          + "Date:" + date + "<br />"
+                                                         + "Description:" + sanitizeHtml(description) + "<br />"
                                                          + "<a href=\"#\">more info</a>"});
         transporter.sendMail(options, function(error, info){
           if(error){
