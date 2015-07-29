@@ -70,10 +70,10 @@ mongo.connect(mongoUri, {}, function(error, db) {
   });
   // Accept reports
   app.post("/reports", function(req, res) {
-    var date = req.body['date'];
-    var version = req.body['version'];
-    var userid = req.body['user-id'];
-    var description = req.body['description'];
+    var date = sanitizeHtml(req.body['date']);
+    var version = sanitizeHtml(req.body['version']);
+    var userid = sanitizeHtml(req.body['user-id']);
+    var description = sanitizeHtml(req.body['description']);
     console.log("Received report from user-id " + userid + " on " + date + " using version " + version);
     db.collection('reports').insert(req.body, function(err, records){
       if (err) {
@@ -85,7 +85,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
                                                          + "User-id:" + userid + "<br />"
                                                          + "Version:" + version + "<br />"
                                                          + "Date:" + date + "<br />"
-                                                         + "Description:" + sanitizeHtml(description) + "<br />"
+                                                         + "Description:" + description + "<br />"
                                                          + "<a href=\"#\">more info</a>"});
         transporter.sendMail(options, function(error, info){
           if(error){
