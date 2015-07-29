@@ -32,8 +32,10 @@ var transporter = nodemailer.createTransport({
 });
 
 if (process.env.EMAIL_SENDER == undefined
-    || process.env.EMAIL_RECIPIENT == undefined) {
-  console.log("EMAIL_SENDER and EMAIL_RECIPIENT environment variables must be defined.");
+    || process.env.EMAIL_RECIPIENT == undefined
+    || process.env.EMAIL_USER == undefined
+    || process.env.EMAIL_PASSWORD == undefined) {
+  console.log("EMAIL_SENDER, EMAIL_RECIPIENT, EMAIL_USER, and EMAIL_PASSOWRD environment variables must be defined.");
   process.exit(1);
 }
 var mailOptions = {
@@ -68,8 +70,8 @@ mongo.connect(mongoUri, {}, function(error, db) {
   // Accept reports
   app.post("/reports", function(req, res) {
     var date = req.body['date'];
-    var version = req.body['userid'];
-    var userid = req.body['userid'];
+    var version = req.body['version'];
+    var userid = req.body['user-id'];
     console.log("Received report from user-id " + userid + " on " + date + " using version " + version);
     db.collection('reports').insert(req.body, function(err, records){
       if (err) {
