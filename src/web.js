@@ -5,6 +5,7 @@ var nodemailer = require('nodemailer');
 var logfmt = require('logfmt');
 var sanitizeHtml = require('sanitize-html');
 var mongo = require('mongodb');
+var ObjectID = mongo.ObjectID;
 var _ = require('underscore');
 require("console-stamp")(console, "yyyy-mm-dd HH:MM:ss.l");
 
@@ -58,7 +59,9 @@ mongo.connect(mongoUri, {}, function(error, db) {
     req.body['userid'] = userid;
     req.body['date'] = new Date();
     console.log("Saving data from user " + userid);
-    console.log("data:" + JSON.stringify(req.body));
+    console.log("player:" + req.body.player.name);
+    console.log("turns:" + req.body.time);
+    //console.log("data:" + JSON.stringify(req.body));
     db.collection('saves').insert(req.body, function(err, records){
       if (err) {
         console.log(err);
@@ -68,7 +71,30 @@ mongo.connect(mongoUri, {}, function(error, db) {
     });
     res.send(201, null);
   });
-  // Accept reports
+  // Accept top score requests
+  app.get("/scores", function(req, res) {
+    db.collection('saves').find({"points": {$exists:true}}, {"player.name": true, "points": true}, {"sort": [["points", "desc"]], "limit": 10}, function(err, scores) {
+      if (err) {
+        console.log("Error retrieving /scores " + err);
+      }
+      console.log("Got scores, Serializing to array");
+      scores.toArray(function(err, scoresArray) {
+        if (err) {
+          console.log("Error creating /scores array" + err);
+        }
+        console.log("Got scores array, returning HTTP response");
+        res.send(200, _.map(scoresArray, function(score) {
+          var score = {id:            score._id,
+                       "player-name": score.player.name,
+                       points:        score.points,
+                       date:          score.date}
+          return score;
+        }));
+        console.log("Done sending HTTP response");
+      });
+    });
+  });
+  // Accept bug reports
   app.post("/reports", function(req, res) {
     var date = sanitizeHtml(req.body['date']);
     var version = sanitizeHtml(req.body['version']);
@@ -86,7 +112,7 @@ mongo.connect(mongoUri, {}, function(error, db) {
                                                          + "Version:" + version + "<br />"
                                                          + "Date:" + date + "<br />"
                                                          + "Description:" + description + "<br />"
-                                                         + "<a href=\"#\">more info</a>"});
+                                                         + "<a href=\"https://aaron-santos.com/reports/" + records[0]._id + "\">more info</a>"});
         transporter.sendMail(options, function(error, info){
           if(error){
             console.log(error);
@@ -98,6 +124,21 @@ mongo.connect(mongoUri, {}, function(error, db) {
     });
     res.send(201, null);
   });
+
+  // Get report
+  app.get("/reports/:id", function(req, res) {
+    var reportid = req.params.id;
+    db.collection('reports').findOne({_id: new ObjectID(reportid)}, function(err, report) {
+      if (err) {
+        console.log("Error retrieving /reports/:id " + err);
+      }
+      console.log("Got report, returning HTTP response");
+      console.log(JSON.stringify(report));
+      res.send(200, report);
+      console.log("Done sending HTTP response");
+    });
+  });
+
   // Query for timelines
   app.get("/saves/timelines", function (req, res) {
     console.log("Retrieving player stats");
